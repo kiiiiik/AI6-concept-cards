@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Concept cards 3D AI6</title>
+    <title>Carrousel 3D Preven6 - Metallic Shine</title>
     
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
@@ -23,7 +23,7 @@
             font-family: sans-serif;
         }
 
-        /* --- STYLE DU LOADER MINI (40px) --- */
+        /* --- LOADER --- */
         #loader {
             position: fixed;
             top: 0; left: 0;
@@ -61,7 +61,7 @@
         .dot.erase { opacity: 0; transform: scale(0.3); }
         .loader-hidden { opacity: 0; visibility: hidden; }
 
-        /* --- CONTAINER DYNAMIQUE SCALABLE --- */
+        /* --- CARROUSEL --- */
         #card-arc-container {
             position: relative;
             width: 100vw;
@@ -127,8 +127,7 @@
         const dotGrid = document.getElementById('dot-grid');
         const numberOfCards = 12; 
         
-        // --- CONFIGURATION DES MODÈLES ---
-        // Remplacez ces noms par vos fichiers réels (ex: card1.glb, card2.glb, etc.)
+        // Liste des 4 modèles qui vont se répéter
         const modelFiles = [
             'card1.glb',
             'card2.glb',
@@ -179,16 +178,18 @@
             });
         }
 
-        // --- INITIALISATION DES CARTES AVEC RÉPÉTITION DES MODÈLES ---
+        // --- INITIALISATION DES CARTES ---
         for (let i = 0; i < numberOfCards; i++) {
             const card = document.createElement('model-viewer');
             
-            // Sélection du modèle (i % 4) pour boucler sur les 4 fichiers
             const modelIndex = i % modelFiles.length;
             card.src = modelFiles[modelIndex];
             
-            card.setAttribute('environment-image', 'neutral');
-            card.setAttribute('exposure', '1.5'); 
+            // Éclairage optimisé pour le métal sans ombres
+            card.setAttribute('environment-image', 'neutral'); 
+            card.setAttribute('exposure', '2.5'); // Augmenté pour faire "claquer" le métal
+            card.setAttribute('shadow-intensity', '0'); // AUCUNE OMBRE
+            
             card.setAttribute('interaction-prompt', 'none');
             card.setAttribute('camera-orbit', '-28deg 89deg auto');
             card.setAttribute('camera-target', '0m 0.08m 0m');
@@ -221,7 +222,8 @@
                 const x = (Math.cos(radian) * finalRadius) + mouseMoveX;
                 const y = (Math.sin(radian) * finalRadius) + finalRadius + 20 + (index * 0.1) + mouseMoveY; 
                 
-                data.element.cameraOrbit = `${-28 + (mousePos.x * 12)}deg ${89 + (mousePos.y * 12)}deg auto`;
+                // Rotation de la caméra pour faire bouger les reflets selon la souris
+                data.element.cameraOrbit = `${-28 + (mousePos.x * 15)}deg ${89 + (mousePos.y * 15)}deg auto`;
                 
                 const rotationZ = data.angle - 270;
                 const distFromCenter = Math.abs(data.angle - 270);
@@ -244,7 +246,7 @@
             requestAnimationFrame(animate);
         }
 
-        // --- GESTION DU CHARGEMENT ---
+        // --- GESTION ÉVÉNEMENTS ---
         window.addEventListener('load', () => {
             runLoaderRipple();
             loaderInt = setInterval(runLoaderRipple, 1500);
@@ -263,7 +265,6 @@
             }, 1800);
         });
 
-        // --- INTERACTION ---
         window.addEventListener('resize', () => { finalRadius = getDynamicRadius(); });
 
         window.addEventListener('wheel', (e) => {
@@ -284,7 +285,6 @@
             const delta = Math.abs(lastTouchY - currentTouchY);
             currentSpeed = Math.min(2.2, currentSpeed + delta * 0.002);
             lastTouchY = currentTouchY;
-
             mousePos.x = (e.touches[0].clientX / window.innerWidth) - 0.5;
             mousePos.y = (e.touches[0].clientY / window.innerHeight) - 0.5;
         }, { passive: true });
