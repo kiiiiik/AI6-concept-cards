@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrousel 3D Preven6 - Responsive Mobile Optimized</title>
+    <title>Carrousel 3D Preven6 - Final Concept</title>
     
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
@@ -23,7 +23,7 @@
             font-family: sans-serif;
         }
 
-        /* --- STYLE DU LOADER (40px) --- */
+        /* --- STYLE DU LOADER MINI (40px) --- */
         #loader {
             position: fixed;
             top: 0; left: 0;
@@ -54,14 +54,14 @@
 
         .dot.ripple {
             background-color: #00FFFF;
-            transform: scale(1.15);
+            transform: scale(1.2);
             transition: background-color 0.15s ease, transform 0.15s ease;
         }
 
         .dot.erase { opacity: 0; transform: scale(0.3); }
         .loader-hidden { opacity: 0; visibility: hidden; }
 
-        /* --- CONTAINER DYNAMIQUE --- */
+        /* --- CONTAINER DYNAMIQUE SCALABLE --- */
         #card-arc-container {
             position: relative;
             width: 100vw;
@@ -72,6 +72,7 @@
             perspective: 1200px;
             isolation: isolate; 
             overflow: hidden; 
+            /* Masque dégradé sur les côtés */
             -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
             mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
             opacity: 0;
@@ -82,7 +83,7 @@
 
         model-viewer {
             position: absolute;
-            /* TAILLE MINIMUM : 280px pour le mobile, sinon 28% de la largeur */
+            /* Scaling dynamique avec sécurité minimum pour mobile */
             width: max(280px, 28vw); 
             height: max(420px, 42vw); 
             bottom: -5vh;
@@ -103,21 +104,18 @@
             transform: translate(-50%, -50%);
             cursor: pointer;
             pointer-events: auto; 
+            background: transparent;
             z-index: 10;
         }
 
+        /* Effet de survol (Hover) */
         model-viewer:has(.hitbox:hover) {
-            /* Soulèvement proportionnel */
-            transform: translate(var(--pos-x), calc(var(--pos-y) - 60px)) rotate(var(--rot-z)) translateZ(50px) !important;
+            transform: translate(var(--pos-x), calc(var(--pos-y) - 60px)) rotate(var(--rot-z)) translateZ(60px) !important;
             filter: var(--current-blur) !important; 
         }
 
-        /* Ajustement spécifique pour les très petits écrans (iPhone SE etc) */
-        @media (max-width: 400px) {
-            model-viewer {
-                width: 240px;
-                height: 360px;
-            }
+        @media (max-width: 480px) {
+            model-viewer { width: 250px; height: 375px; }
         }
     </style>
 </head>
@@ -132,22 +130,20 @@
         const dotGrid = document.getElementById('dot-grid');
         const numberOfCards = 12; 
         
-        // Rayon dynamique avec un minimum pour mobile
-        const getDynamicRadius = () => {
-            const r = window.innerWidth * 0.45;
-            return Math.max(r, 400); // Ne descend pas sous 400px de rayon pour éviter l'écrasement sur mobile
-        };
-
+        // Rayon dynamique (45% de la largeur, min 400px pour mobile)
+        const getDynamicRadius = () => Math.max(window.innerWidth * 0.45, 400);
         let finalRadius = getDynamicRadius();
+        
         const baseSpeed = 0.07;
-        let currentSpeed = 1.5; 
-        const frictionIntro = 0.985;
+        let currentSpeed = 1.5; // Impulsion de départ
+        const friction = 0.985; // Ralentissement fluide
         
         let cardsData = [];
         let mousePos = { x: 0, y: 0 };
         let animationActive = false;
+        let loaderInt;
 
-        // Génération du loader
+        // --- GÉNÉRATION DU LOADER ---
         const dots = [];
         for (let r = 0; r < 5; r++) {
             for (let c = 0; c < 5; c++) {
@@ -178,12 +174,12 @@
             });
         }
 
-        // Initialisation des cartes
+        // --- INITIALISATION DES CARTES ---
         for (let i = 0; i < numberOfCards; i++) {
             const card = document.createElement('model-viewer');
             card.src = 'card3d.glb';
             card.setAttribute('environment-image', 'neutral');
-            card.setAttribute('exposure', '1.5'); 
+            card.setAttribute('exposure', '3'); 
             card.setAttribute('interaction-prompt', 'none');
             card.setAttribute('camera-orbit', '-28deg 89deg auto');
             card.setAttribute('camera-target', '0m 0.08m 0m');
@@ -198,22 +194,27 @@
             cardsData.push({ element: card, angle: (360 / numberOfCards) * i });
         }
 
+        // --- BOUCLE D'ANIMATION ---
         function animate() {
             if (!animationActive) return;
 
-            currentSpeed = Math.max(baseSpeed, currentSpeed * frictionIntro);
+            // Appliquer la friction pour ralentir après une impulsion
+            currentSpeed = Math.max(baseSpeed, currentSpeed * friction);
 
             cardsData.forEach((data, index) => {
                 data.angle += currentSpeed;
                 if (data.angle >= 360) data.angle -= 360;
 
                 const radian = data.angle * (Math.PI / 180);
+                
+                // Mouvement parallaxe souris
                 const mouseMoveX = mousePos.x * (window.innerWidth * 0.05); 
                 const mouseMoveY = mousePos.y * (window.innerHeight * 0.03);
                 
                 const x = (Math.cos(radian) * finalRadius) + mouseMoveX;
                 const y = (Math.sin(radian) * finalRadius) + finalRadius + 20 + (index * 0.1) + mouseMoveY; 
                 
+                // Inclinaison de la carte vers la souris
                 data.element.cameraOrbit = `${-28 + (mousePos.x * 12)}deg ${89 + (mousePos.y * 12)}deg auto`;
                 
                 const rotationZ = data.angle - 270;
@@ -230,6 +231,7 @@
                     data.element.style.zIndex = Math.floor(data.angle);
                 }
 
+                // Gestion de l'opacité sur l'arc
                 data.element.style.opacity = (data.angle > 140 && data.angle < 400) ? "1" : "0";
                 data.element.style.filter = `blur(${blurAmount}px)`;
             });
@@ -237,9 +239,10 @@
             requestAnimationFrame(animate);
         }
 
+        // --- GESTION DU CHARGEMENT (2s) ---
         window.addEventListener('load', () => {
             runLoaderRipple();
-            const loaderInt = setInterval(runLoaderRipple, 1500);
+            loaderInt = setInterval(runLoaderRipple, 1500);
 
             setTimeout(() => {
                 clearInterval(loaderInt);
@@ -250,22 +253,34 @@
                         animationActive = true; 
                         animate(); 
                         container.classList.add('visible');
-                    }, 400);
-                }, 800);
-            }, 1800);
+                    }, 400); // Écran blanc
+                }, 800); // Temps d'effacement
+            }, 1800); // Temps total loader
         });
 
-        window.addEventListener('resize', () => {
-            finalRadius = getDynamicRadius();
-        });
+        // --- INTERACTION SOURIS ET TOUCH ---
+        window.addEventListener('resize', () => { finalRadius = getDynamicRadius(); });
+
+        window.addEventListener('wheel', (e) => {
+            if (!animationActive) return;
+            currentSpeed = Math.min(2.5, currentSpeed + Math.abs(e.deltaY) * 0.001);
+        }, { passive: true });
 
         window.addEventListener("mousemove", (e) => {
             mousePos.x = (e.clientX / window.innerWidth) - 0.5;
             mousePos.y = (e.clientY / window.innerHeight) - 0.5;
         });
 
-        // Support tactile basique pour mobile
+        // Support Tactile (Inclinaison + Swipe)
+        let lastTouchY = 0;
+        window.addEventListener("touchstart", (e) => { lastTouchY = e.touches[0].clientY; }, { passive: true });
         window.addEventListener("touchmove", (e) => {
+            if (!animationActive) return;
+            const currentTouchY = e.touches[0].clientY;
+            const delta = Math.abs(lastTouchY - currentTouchY);
+            currentSpeed = Math.min(2.2, currentSpeed + delta * 0.002);
+            lastTouchY = currentTouchY;
+
             mousePos.x = (e.touches[0].clientX / window.innerWidth) - 0.5;
             mousePos.y = (e.touches[0].clientY / window.innerHeight) - 0.5;
         }, { passive: true });
