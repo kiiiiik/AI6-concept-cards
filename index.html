@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrousel 3D Preven6 - Metallic Shine</title>
+    <title>Carrousel 3D Preven6 - Optimized</title>
     
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
@@ -23,7 +23,7 @@
             font-family: sans-serif;
         }
 
-        /* --- LOADER --- */
+        /* --- LOADER D'ORIGINE --- */
         #loader {
             position: fixed;
             top: 0; left: 0;
@@ -50,6 +50,8 @@
             background-color: #001DFC;
             border-radius: 50%;
             transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.6s ease; 
+            /* Optimisation des points du loader */
+            will-change: transform, background-color, opacity; 
         }
 
         .dot.ripple {
@@ -76,6 +78,8 @@
             mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
             opacity: 0;
             transition: opacity 1.5s ease-in-out;
+            /* Optimisation de l'apparition du container */
+            will-change: opacity; 
         }
 
         #card-arc-container.visible { opacity: 1; }
@@ -88,10 +92,11 @@
             --poster-color: transparent;
             transform-origin: center center;
             backface-visibility: hidden;
-            will-change: transform;
             contain: layout; 
             transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
             pointer-events: none; 
+            /* ACCÉLÉRATION MATÉRIELLE : Prépare le GPU pour les propriétés animées */
+            will-change: transform, opacity, filter; 
         }
 
         .hitbox {
@@ -127,7 +132,7 @@
         const dotGrid = document.getElementById('dot-grid');
         const numberOfCards = 12; 
         
-        // Liste des 4 modèles qui vont se répéter
+        // CORRECTION : Définition propre des 4 modèles
         const modelFiles = [
             'card1.glb',
             'card2.glb',
@@ -182,13 +187,13 @@
         for (let i = 0; i < numberOfCards; i++) {
             const card = document.createElement('model-viewer');
             
+            // CORRECTION LOGIQUE : Cycle strict sur 4 modèles (0,1,2,3...0,1,2,3)
             const modelIndex = i % modelFiles.length;
             card.src = modelFiles[modelIndex];
             
-            // Éclairage optimisé pour le métal sans ombres
             card.setAttribute('environment-image', 'neutral'); 
-            card.setAttribute('exposure', '2.5'); // Augmenté pour faire "claquer" le métal
-            card.setAttribute('shadow-intensity', '0'); // AUCUNE OMBRE
+            card.setAttribute('exposure', '2.5'); // Brillance métallique
+            card.setAttribute('shadow-intensity', '0'); // Sans ombres
             
             card.setAttribute('interaction-prompt', 'none');
             card.setAttribute('camera-orbit', '-28deg 89deg auto');
@@ -222,7 +227,7 @@
                 const x = (Math.cos(radian) * finalRadius) + mouseMoveX;
                 const y = (Math.sin(radian) * finalRadius) + finalRadius + 20 + (index * 0.1) + mouseMoveY; 
                 
-                // Rotation de la caméra pour faire bouger les reflets selon la souris
+                // Rotation de la caméra pour les reflets mobiles
                 data.element.cameraOrbit = `${-28 + (mousePos.x * 15)}deg ${89 + (mousePos.y * 15)}deg auto`;
                 
                 const rotationZ = data.angle - 270;
@@ -232,14 +237,14 @@
                 data.element.style.setProperty('--pos-x', `${x}px`);
                 data.element.style.setProperty('--pos-y', `${y}px`);
                 data.element.style.setProperty('--rot-z', `${rotationZ}deg`);
-                data.element.style.setProperty('--current-blur', `blur(${blurAmount}px)`);
 
                 if (!data.element.querySelector('.hitbox:hover')) {
                     data.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotationZ}deg) translateZ(${index}px)`;
                     data.element.style.zIndex = Math.floor(data.angle);
                 }
 
-                data.element.style.opacity = (data.angle > 140 && data.angle < 400) ? "1" : "0";
+                // Opacité élargie pour garantir la visibilité des 4 types
+                data.element.style.opacity = (data.angle > 110 && data.angle < 430) ? "1" : "0";
                 data.element.style.filter = `blur(${blurAmount}px)`;
             });
 
