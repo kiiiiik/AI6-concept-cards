@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrousel 3D Preven6 - Final Concept</title>
+    <title>Carrousel 3D Preven6 - Multi-Models</title>
     
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
@@ -72,7 +72,6 @@
             perspective: 1200px;
             isolation: isolate; 
             overflow: hidden; 
-            /* Masque dégradé sur les côtés */
             -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
             mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
             opacity: 0;
@@ -83,7 +82,6 @@
 
         model-viewer {
             position: absolute;
-            /* Scaling dynamique avec sécurité minimum pour mobile */
             width: max(280px, 28vw); 
             height: max(420px, 42vw); 
             bottom: -5vh;
@@ -108,10 +106,9 @@
             z-index: 10;
         }
 
-        /* Effet de survol (Hover) */
         model-viewer:has(.hitbox:hover) {
-            transform: translate(var(--pos-x), calc(var(--pos-y) - 60px)) rotate(var(--rot-z)) translateZ(60px) !important;
-            filter: var(--current-blur) !important; 
+            transform: translate(var(--pos-x), calc(var(--pos-y) - 60px)) rotate(var(--rot-z)) translateZ(100px) !important;
+            filter: blur(0px) !important; 
         }
 
         @media (max-width: 480px) {
@@ -130,13 +127,21 @@
         const dotGrid = document.getElementById('dot-grid');
         const numberOfCards = 12; 
         
-        // Rayon dynamique (45% de la largeur, min 400px pour mobile)
+        // --- CONFIGURATION DES MODÈLES ---
+        // Remplacez ces noms par vos fichiers réels (ex: card1.glb, card2.glb, etc.)
+        const modelFiles = [
+            'card1.glb',
+            'card2.glb',
+            'card3.glb',
+            'card4.glb'
+        ];
+        
         const getDynamicRadius = () => Math.max(window.innerWidth * 0.45, 400);
         let finalRadius = getDynamicRadius();
         
         const baseSpeed = 0.07;
-        let currentSpeed = 1.5; // Impulsion de départ
-        const friction = 0.985; // Ralentissement fluide
+        let currentSpeed = 1.5; 
+        const friction = 0.985; 
         
         let cardsData = [];
         let mousePos = { x: 0, y: 0 };
@@ -174,10 +179,14 @@
             });
         }
 
-        // --- INITIALISATION DES CARTES ---
+        // --- INITIALISATION DES CARTES AVEC RÉPÉTITION DES MODÈLES ---
         for (let i = 0; i < numberOfCards; i++) {
             const card = document.createElement('model-viewer');
-            card.src = 'card3d.glb';
+            
+            // Sélection du modèle (i % 4) pour boucler sur les 4 fichiers
+            const modelIndex = i % modelFiles.length;
+            card.src = modelFiles[modelIndex];
+            
             card.setAttribute('environment-image', 'neutral');
             card.setAttribute('exposure', '1.5'); 
             card.setAttribute('interaction-prompt', 'none');
@@ -198,7 +207,6 @@
         function animate() {
             if (!animationActive) return;
 
-            // Appliquer la friction pour ralentir après une impulsion
             currentSpeed = Math.max(baseSpeed, currentSpeed * friction);
 
             cardsData.forEach((data, index) => {
@@ -207,14 +215,12 @@
 
                 const radian = data.angle * (Math.PI / 180);
                 
-                // Mouvement parallaxe souris
                 const mouseMoveX = mousePos.x * (window.innerWidth * 0.05); 
                 const mouseMoveY = mousePos.y * (window.innerHeight * 0.03);
                 
                 const x = (Math.cos(radian) * finalRadius) + mouseMoveX;
                 const y = (Math.sin(radian) * finalRadius) + finalRadius + 20 + (index * 0.1) + mouseMoveY; 
                 
-                // Inclinaison de la carte vers la souris
                 data.element.cameraOrbit = `${-28 + (mousePos.x * 12)}deg ${89 + (mousePos.y * 12)}deg auto`;
                 
                 const rotationZ = data.angle - 270;
@@ -231,7 +237,6 @@
                     data.element.style.zIndex = Math.floor(data.angle);
                 }
 
-                // Gestion de l'opacité sur l'arc
                 data.element.style.opacity = (data.angle > 140 && data.angle < 400) ? "1" : "0";
                 data.element.style.filter = `blur(${blurAmount}px)`;
             });
@@ -239,7 +244,7 @@
             requestAnimationFrame(animate);
         }
 
-        // --- GESTION DU CHARGEMENT (2s) ---
+        // --- GESTION DU CHARGEMENT ---
         window.addEventListener('load', () => {
             runLoaderRipple();
             loaderInt = setInterval(runLoaderRipple, 1500);
@@ -253,12 +258,12 @@
                         animationActive = true; 
                         animate(); 
                         container.classList.add('visible');
-                    }, 400); // Écran blanc
-                }, 800); // Temps d'effacement
-            }, 1800); // Temps total loader
+                    }, 400);
+                }, 800);
+            }, 1800);
         });
 
-        // --- INTERACTION SOURIS ET TOUCH ---
+        // --- INTERACTION ---
         window.addEventListener('resize', () => { finalRadius = getDynamicRadius(); });
 
         window.addEventListener('wheel', (e) => {
@@ -271,7 +276,6 @@
             mousePos.y = (e.clientY / window.innerHeight) - 0.5;
         });
 
-        // Support Tactile (Inclinaison + Swipe)
         let lastTouchY = 0;
         window.addEventListener("touchstart", (e) => { lastTouchY = e.touches[0].clientY; }, { passive: true });
         window.addEventListener("touchmove", (e) => {
