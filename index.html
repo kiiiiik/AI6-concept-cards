@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carrousel 3D Preven6 - Fixed Light & 2s Loader</title>
+    <title>Carrousel 3D Preven6 - Responsive Mobile Optimized</title>
     
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
@@ -23,13 +23,11 @@
             font-family: sans-serif;
         }
 
-        /* --- STYLE DU LOADER (40px, 2 secondes) --- */
+        /* --- STYLE DU LOADER (40px) --- */
         #loader {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background-color: #ffffff;
             display: flex;
             justify-content: center;
@@ -48,36 +46,26 @@
         }
 
         .dot {
-            width: 100%; 
-            height: 100%;
+            width: 100%; height: 100%;
             background-color: #001DFC;
             border-radius: 50%;
-            transform-origin: center;
-            opacity: 1;
             transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.6s ease; 
         }
 
         .dot.ripple {
             background-color: #00FFFF;
-            transform: scale(1.1);
+            transform: scale(1.15);
             transition: background-color 0.15s ease, transform 0.15s ease;
         }
 
-        .dot.erase {
-            opacity: 0;
-            transform: scale(0.3);
-        }
+        .dot.erase { opacity: 0; transform: scale(0.3); }
+        .loader-hidden { opacity: 0; visibility: hidden; }
 
-        .loader-hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        /* --- CONTAINER --- */
+        /* --- CONTAINER DYNAMIQUE --- */
         #card-arc-container {
             position: relative;
             width: 100vw;
-            height: 650px; 
+            height: 75vh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -86,20 +74,18 @@
             overflow: hidden; 
             -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
             mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
-            
             opacity: 0;
             transition: opacity 1.5s ease-in-out;
         }
 
-        #card-arc-container.visible {
-            opacity: 1;
-        }
+        #card-arc-container.visible { opacity: 1; }
 
         model-viewer {
             position: absolute;
-            width: 400px; 
-            height: 600px;
-            bottom: -50px;
+            /* TAILLE MINIMUM : 280px pour le mobile, sinon 28% de la largeur */
+            width: max(280px, 28vw); 
+            height: max(420px, 42vw); 
+            bottom: -5vh;
             --poster-color: transparent;
             transform-origin: center center;
             backface-visibility: hidden;
@@ -111,29 +97,33 @@
 
         .hitbox {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 240px; 
-            height: 360px;
+            top: 50%; left: 50%;
+            width: max(180px, 18vw); 
+            height: max(280px, 28vw);
             transform: translate(-50%, -50%);
             cursor: pointer;
             pointer-events: auto; 
-            background: transparent;
             z-index: 10;
         }
 
         model-viewer:has(.hitbox:hover) {
-            transform: translate(var(--pos-x), calc(var(--pos-y) - 65px)) rotate(var(--rot-z)) translateZ(-30px) !important;
+            /* Soulèvement proportionnel */
+            transform: translate(var(--pos-x), calc(var(--pos-y) - 60px)) rotate(var(--rot-z)) translateZ(50px) !important;
             filter: var(--current-blur) !important; 
+        }
+
+        /* Ajustement spécifique pour les très petits écrans (iPhone SE etc) */
+        @media (max-width: 400px) {
+            model-viewer {
+                width: 240px;
+                height: 360px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div id="dot-grid"></div>
-    </div>
-
+    <div id="loader"><div id="dot-grid"></div></div>
     <div id="card-arc-container"></div>
 
     <script>
@@ -141,59 +131,50 @@
         const loader = document.getElementById('loader');
         const dotGrid = document.getElementById('dot-grid');
         const numberOfCards = 12; 
-        const finalRadius = 550;       
-        const baseSpeed = 0.07;
         
-        let currentSpeed = 0.5; 
+        // Rayon dynamique avec un minimum pour mobile
+        const getDynamicRadius = () => {
+            const r = window.innerWidth * 0.45;
+            return Math.max(r, 400); // Ne descend pas sous 400px de rayon pour éviter l'écrasement sur mobile
+        };
+
+        let finalRadius = getDynamicRadius();
+        const baseSpeed = 0.07;
+        let currentSpeed = 1.5; 
         const frictionIntro = 0.985;
-        const frictionScroll = 0.96;
         
         let cardsData = [];
         let mousePos = { x: 0, y: 0 };
         let animationActive = false;
-        let loaderAnimationInterval;
 
-        // Génération de la grille
-        const rows = 5, cols = 5, dots = [];
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
+        // Génération du loader
+        const dots = [];
+        for (let r = 0; r < 5; r++) {
+            for (let c = 0; c < 5; c++) {
                 const dot = document.createElement('div');
                 dot.className = 'dot';
                 dotGrid.appendChild(dot);
-                dots.push({
-                    element: dot,
-                    dist: Math.abs(r - 2) + Math.abs(c - 2)
-                });
+                dots.push({ element: dot, dist: Math.abs(r - 2) + Math.abs(c - 2) });
             }
         }
 
-        const waveParams = [
-            { dist: 0, delay: 0 },
-            { dist: 1, delay: 150 },
-            { dist: 2, delay: 300 },
-            { dist: 3, delay: 450 },
-            { dist: 4, delay: 600 }
-        ];
-
         function runLoaderRipple() {
             dots.forEach(d => d.element.classList.remove('ripple'));
-            waveParams.forEach(param => {
+            [{d:0,t:0},{d:1,t:150},{d:2,t:300},{d:3,t:450},{d:4,t:600}].forEach(p => {
                 setTimeout(() => {
-                    const waveDots = dots.filter(d => d.dist === param.dist);
-                    waveDots.forEach(d => d.element.classList.add('ripple'));
-                    setTimeout(() => {
-                        waveDots.forEach(d => d.element.classList.remove('ripple'));
-                    }, 250);
-                }, param.delay);
+                    const wave = dots.filter(d => d.dist === p.d);
+                    wave.forEach(d => d.element.classList.add('ripple'));
+                    setTimeout(() => wave.forEach(d => d.element.classList.remove('ripple')), 250);
+                }, p.t);
             });
         }
 
         function runLoaderErase() {
             dots.forEach(d => d.element.classList.remove('ripple'));
-            waveParams.forEach(param => {
+            [0,1,2,3,4].forEach(dist => {
                 setTimeout(() => {
-                    dots.filter(d => d.dist === param.dist).forEach(d => d.element.classList.add('erase'));
-                }, param.delay);
+                    dots.filter(d => d.dist === dist).forEach(d => d.element.classList.add('erase'));
+                }, dist * 150);
             });
         }
 
@@ -201,9 +182,8 @@
         for (let i = 0; i < numberOfCards; i++) {
             const card = document.createElement('model-viewer');
             card.src = 'card3d.glb';
-            // Utilisation d'un éclairage global fixe et neutre
             card.setAttribute('environment-image', 'neutral');
-            card.setAttribute('exposure', '1.8'); 
+            card.setAttribute('exposure', '1.5'); 
             card.setAttribute('interaction-prompt', 'none');
             card.setAttribute('camera-orbit', '-28deg 89deg auto');
             card.setAttribute('camera-target', '0m 0.08m 0m');
@@ -221,27 +201,21 @@
         function animate() {
             if (!animationActive) return;
 
-            if (currentSpeed > baseSpeed) {
-                currentSpeed *= frictionIntro;
-            } else {
-                currentSpeed = baseSpeed;
-            }
+            currentSpeed = Math.max(baseSpeed, currentSpeed * frictionIntro);
 
             cardsData.forEach((data, index) => {
                 data.angle += currentSpeed;
                 if (data.angle >= 360) data.angle -= 360;
 
-                const r = finalRadius;
                 const radian = data.angle * (Math.PI / 180);
+                const mouseMoveX = mousePos.x * (window.innerWidth * 0.05); 
+                const mouseMoveY = mousePos.y * (window.innerHeight * 0.03);
                 
-                const mouseMoveX = mousePos.x * 40; 
-                const mouseMoveY = mousePos.y * 20;
-                const x = (Math.cos(radian) * r) + mouseMoveX;
-                const y = (Math.sin(radian) * r) + finalRadius + 20 + (index * 0.1) + mouseMoveY; 
+                const x = (Math.cos(radian) * finalRadius) + mouseMoveX;
+                const y = (Math.sin(radian) * finalRadius) + finalRadius + 20 + (index * 0.1) + mouseMoveY; 
                 
                 data.element.cameraOrbit = `${-28 + (mousePos.x * 12)}deg ${89 + (mousePos.y * 12)}deg auto`;
-                data.element.cameraTarget = `${mousePos.x * 0.15}m ${0.08 - (mousePos.y * 0.15)}m 0m`;
-
+                
                 const rotationZ = data.angle - 270;
                 const distFromCenter = Math.abs(data.angle - 270);
                 const blurAmount = Math.max(0, (distFromCenter - 35) / 14);
@@ -252,17 +226,12 @@
                 data.element.style.setProperty('--current-blur', `blur(${blurAmount}px)`);
 
                 if (!data.element.querySelector('.hitbox:hover')) {
-                    data.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotationZ}deg) translateZ(${index * 1}px)`;
+                    data.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotationZ}deg) translateZ(${index}px)`;
                     data.element.style.zIndex = Math.floor(data.angle);
                 }
 
-                if (data.angle > 160 && data.angle < 380) {
-                    data.element.style.opacity = "1";
-                    data.element.style.filter = `blur(${blurAmount}px)`;
-                } else {
-                    data.element.style.opacity = "0";
-                    data.element.style.filter = "none";
-                }
+                data.element.style.opacity = (data.angle > 140 && data.angle < 400) ? "1" : "0";
+                data.element.style.filter = `blur(${blurAmount}px)`;
             });
 
             requestAnimationFrame(animate);
@@ -270,33 +239,36 @@
 
         window.addEventListener('load', () => {
             runLoaderRipple();
-            loaderAnimationInterval = setInterval(runLoaderRipple, 1500);
+            const loaderInt = setInterval(runLoaderRipple, 1500);
 
             setTimeout(() => {
-                clearInterval(loaderAnimationInterval);
+                clearInterval(loaderInt);
                 runLoaderErase();
-
                 setTimeout(() => {
                     loader.classList.add('loader-hidden');
                     setTimeout(() => {
                         animationActive = true; 
                         animate(); 
                         container.classList.add('visible');
-                    }, 400); // Délai d'écran blanc
-                }, 800); // Temps pour l'onde d'effacement
-            }, 1800); // Durée totale du loader ~2s
+                    }, 400);
+                }, 800);
+            }, 1800);
         });
 
-        window.addEventListener('wheel', (e) => {
-            if (!animationActive) return;
-            currentSpeed += Math.abs(e.deltaY) * 0.0012;
-            if (currentSpeed > 2.0) currentSpeed = 2.0;
-        }, { passive: true });
+        window.addEventListener('resize', () => {
+            finalRadius = getDynamicRadius();
+        });
 
         window.addEventListener("mousemove", (e) => {
             mousePos.x = (e.clientX / window.innerWidth) - 0.5;
             mousePos.y = (e.clientY / window.innerHeight) - 0.5;
         });
+
+        // Support tactile basique pour mobile
+        window.addEventListener("touchmove", (e) => {
+            mousePos.x = (e.touches[0].clientX / window.innerWidth) - 0.5;
+            mousePos.y = (e.touches[0].clientY / window.innerHeight) - 0.5;
+        }, { passive: true });
     </script>
 </body>
 </html>
