@@ -23,46 +23,6 @@
             font-family: sans-serif;
         }
 
-        /* --- LOADER D'ORIGINE --- */
-        #loader {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s;
-        }
-
-        #dot-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            gap: 4px; 
-            width: 40px; 
-            height: 40px;
-        }
-
-        .dot {
-            width: 100%; height: 100%;
-            background-color: #001DFC;
-            border-radius: 50%;
-            transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.6s ease; 
-            /* Optimisation des points du loader */
-            will-change: transform, background-color, opacity; 
-        }
-
-        .dot.ripple {
-            background-color: #00FCD9;
-            transform: scale(1.2);
-            transition: background-color 0.15s ease, transform 0.15s ease;
-        }
-
-        .dot.erase { opacity: 0; transform: scale(0.3); }
-        .loader-hidden { opacity: 0; visibility: hidden; }
-
         /* --- CARROUSEL --- */
         #card-arc-container {
             position: relative;
@@ -84,62 +44,169 @@
 
         #card-arc-container.visible { opacity: 1; }
 
-        model-viewer {
+        .card-wrapper {
             position: absolute;
-            width: max(280px, 28vw); 
-            height: max(420px, 42vw); 
+            width: max(280px, 28vw);
+            height: max(420px, 42vw);
             bottom: -5vh;
-            --poster-color: transparent;
             transform-origin: center center;
             backface-visibility: hidden;
-            contain: layout; 
+            contain: layout;
             transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-            pointer-events: none; 
+            pointer-events: none;
             /* ACCÉLÉRATION MATÉRIELLE : Prépare le GPU pour les propriétés animées */
-            will-change: transform, opacity, filter; 
+            will-change: transform, opacity, filter;
         }
 
-        .hitbox {
+        .card-wrapper model-viewer {
             position: absolute;
-            top: 50%; left: 50%;
-            width: max(180px, 18vw); 
-            height: max(280px, 28vw);
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-            pointer-events: auto; 
-            background: transparent;
-            z-index: 10;
-        }
-
-        model-viewer:has(.hitbox:hover) {
-            transform: translate(var(--pos-x), calc(var(--pos-y) - 60px)) rotate(var(--rot-z)) translateZ(100px) !important;
-            filter: blur(0px) !important; 
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            --poster-color: transparent;
+            pointer-events: none;
         }
 
         @media (max-width: 480px) {
-            model-viewer { width: 250px; height: 375px; }
+            .card-wrapper { width: 250px; height: 375px; }
         }
+
+        /* --- BADGE DE HOVER (suit le curseur sur la zone des cards) --- */
+        #card-arc-container { cursor: pointer; }
+
+        #hover-badge {
+            position: fixed;
+            top: 0; left: 0;
+            display: block;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 20;
+            transform: translate3d(-9999px, -9999px, 0);
+            transition: opacity 0.25s ease;
+            will-change: transform, opacity;
+        }
+
+        #hover-badge.visible { opacity: 1; }
+
+        #hover-badge img {
+            display: block;
+            width: 108px;
+            height: 32px;
+            user-select: none;
+        }
+
+        /* --- PANNEAU DE CALIBRAGE (?debug=1) : ajuster position/taille du tag, de l'icône et du texte --- */
+        #layout-panel {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 9999;
+            width: 260px;
+            padding: 12px 14px;
+            background: rgba(20, 22, 40, 0.92);
+            color: #fff;
+            font-family: sans-serif;
+            font-size: 11px;
+            border-radius: 8px;
+            max-height: calc(100vh - 24px);
+            overflow-y: auto;
+        }
+
+        #layout-panel h3 {
+            margin: 0 0 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #8ea2ff;
+        }
+
+        #layout-panel fieldset {
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            margin: 0 0 10px;
+            padding: 6px 8px 8px;
+        }
+
+        #layout-panel legend {
+            padding: 0 4px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        #layout-panel label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        #layout-panel label span:first-child { width: 40px; flex-shrink: 0; }
+        #layout-panel label span:last-child { width: 34px; flex-shrink: 0; text-align: right; }
+
+        #layout-panel input[type="range"] { flex: 1; }
+
+        #layout-panel button {
+            width: 100%;
+            margin-top: 4px;
+            padding: 6px;
+            background: #3B4CCB;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        #layout-panel button:hover { background: #4d5edb; }
     </style>
 </head>
 <body>
 
-    <div id="loader"><div id="dot-grid"></div></div>
     <div id="card-arc-container"></div>
+
+    <!-- Asset qui suit le curseur au hover sur la zone des cards -->
+    <!-- TODO : remplacer href="#" par le lien définitif -->
+    <a id="hover-badge" href="#">
+        <img src="hover.svg" alt="Découvrir" draggable="false">
+    </a>
+
+    <!-- Panneau de calibrage, visible seulement avec ?debug=1 dans l'URL -->
+    <div id="layout-panel" style="display:none"></div>
 
     <script>
         const container = document.getElementById('card-arc-container');
-        const loader = document.getElementById('loader');
-        const dotGrid = document.getElementById('dot-grid');
-        const numberOfCards = 12; 
+        const hoverBadge = document.getElementById('hover-badge');
+        const numberOfCards = 12;
+
+        // TODO : lien définitif à renseigner ici (et sur le href de #hover-badge)
+        const cardsLink = '#';
+        hoverBadge.href = cardsLink;
+
+        // --- BADGE AU SURVOL DE LA ZONE DES CARDS ---
+        container.addEventListener('mouseenter', () => {
+            hoverBadge.classList.add('visible');
+        });
+
+        container.addEventListener('mouseleave', () => {
+            hoverBadge.classList.remove('visible');
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            hoverBadge.style.transform = `translate3d(${e.clientX - 108 - 8}px, ${e.clientY + 18}px, 0)`;
+        });
         
-        // CORRECTION : Définition propre des 4 modèles
-        const modelFiles = [
-            'card1.glb',
-            'card2.glb',
-            'card3.glb',
-            'card4.glb'
+        // --- SOLUTIONS (données administrables : logo graphique, logo texte, tag, lien) ---
+        // TODO : ces 4 entrées sont des données de démo ; à terme injectées depuis WordPress (upload logo + texte par solution).
+        // Le logo/texte/tag sont composités sur un canvas puis appliqués comme texture sur le matériau
+        // "logo_zone" du GLB (quad dédié, alphaMode BLEND) : ça fait partie du rendu 3D, donc ça suit
+        // exactement la caméra/le tilt, contrairement à un overlay HTML par-dessus.
+        const solutions = [
+            { model: 'card3d.glb', tag: 'tag-prevention.png', graphic: 'logo-preven6.png', text: 'text-preven6.png', link: '#' },
+            { model: 'card3d.glb', tag: 'tag-crm.png', graphic: 'logo-price6.png', text: 'text-price6.png', link: '#' },
+            { model: 'card3d.glb', tag: 'tag-crm.png', graphic: 'logo-price6+.png', text: 'text-price6+.png', link: '#' },
+            { model: 'card3d.glb', tag: 'tag-sinistre.png', graphic: 'logo-concerto.png', text: 'text-concerto.png', link: '#' }
         ];
-        
+
         const getDynamicRadius = () => Math.max(window.innerWidth * 0.45, 400);
         let finalRadius = getDynamicRadius();
         
@@ -150,101 +217,258 @@
         let cardsData = [];
         let mousePos = { x: 0, y: 0 };
         let animationActive = false;
-        let loaderInt;
 
-        // --- GÉNÉRATION DU LOADER ---
-        const dots = [];
-        for (let r = 0; r < 5; r++) {
-            for (let c = 0; c < 5; c++) {
-                const dot = document.createElement('div');
-                dot.className = 'dot';
-                dotGrid.appendChild(dot);
-                dots.push({ element: dot, dist: Math.abs(r - 2) + Math.abs(c - 2) });
+        // --- TEXTURE DU LOGO (composite tag + icône + texte sur un canvas, posé sur le matériau "logo_zone") ---
+        const imageCache = {};
+        function loadImage(src) {
+            if (!imageCache[src]) {
+                imageCache[src] = new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = src;
+                });
             }
+            return imageCache[src];
         }
 
-        function runLoaderRipple() {
-            dots.forEach(d => d.element.classList.remove('ripple'));
-            [{d:0,t:0},{d:1,t:150},{d:2,t:300},{d:3,t:450},{d:4,t:600}].forEach(p => {
-                setTimeout(() => {
-                    const wave = dots.filter(d => d.dist === p.d);
-                    wave.forEach(d => d.element.classList.add('ripple'));
-                    setTimeout(() => wave.forEach(d => d.element.classList.remove('ripple')), 250);
-                }, p.t);
+        // Hauteur fixe, largeur proportionnelle au contenu (un tag "CRM" et un tag "PRÉVENTION"
+        // gardent la même hauteur, seule leur largeur varie selon le texte).
+        // align définit ce que représente xPct : 'left' (bord gauche), 'right' (bord droit), 'center' (centre).
+        function drawAtHeight(ctx, img, xPct, yPct, heightPct, canvasW, canvasH, align) {
+            const h = heightPct * canvasH;
+            const w = h * (img.width / img.height);
+            let x = xPct * canvasW;
+            if (align === 'right') x -= w;
+            else if (align === 'center') x -= w / 2;
+            ctx.drawImage(img, x, yPct * canvasH, w, h);
+            return w;
+        }
+
+        // Un logo texte est recadré serré par son export (pas de marge fixe) : un mot avec
+        // jambage ("p", "g"...) ou hampe ("b", "l"...) n'occupe pas la même proportion de sa
+        // propre image qu'un mot qui n'en a pas ("concerto"). En fixant juste la hauteur totale
+        // de l'image, ces mots rendraient visuellement plus petits/grands les uns que les autres.
+        // On mesure donc la "masse d'encre" par ligne pour isoler le corps de lettre principal
+        // (en ignorant les extrémités fines type jambage/hampe, qui ne concernent qu'1-2 lettres),
+        // et on cale la mise à l'échelle sur cette zone-là plutôt que sur la boîte englobante brute.
+        const inkCoreCache = new Map();
+        function measureInkCore(img, trim = 0.06) {
+            if (inkCoreCache.has(img.src)) return inkCoreCache.get(img.src);
+
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const { data } = ctx.getImageData(0, 0, w, h);
+
+            const rowMass = new Array(h).fill(0);
+            let total = 0;
+            for (let y = 0; y < h; y++) {
+                let mass = 0;
+                for (let x = 0; x < w; x++) mass += data[(y * w + x) * 4 + 3];
+                rowMass[y] = mass;
+                total += mass;
+            }
+
+            const lowCut = total * trim;
+            const highCut = total * (1 - trim);
+            let cum = 0, top = 0, bottom = h - 1;
+            for (let y = 0; y < h; y++) { cum += rowMass[y]; if (cum >= lowCut) { top = y; break; } }
+            cum = 0;
+            for (let y = 0; y < h; y++) { cum += rowMass[y]; if (cum >= highCut) { bottom = y; break; } }
+
+            const result = { top, bottom, coreHeight: Math.max(1, bottom - top), imgHeight: h };
+            inkCoreCache.set(img.src, result);
+            return result;
+        }
+
+        // Ancre par le bas (le bas de la boîte reste fixe, proche de la ligne de base réelle) et
+        // met à l'échelle sur la hauteur du "corps de lettre" mesuré, pas la hauteur brute de l'image.
+        function drawTextCoreAligned(ctx, img, xPct, bottomPct, coreHeightPct, canvasW, canvasH, align) {
+            const { coreHeight } = measureInkCore(img);
+            const scale = (coreHeightPct * canvasH) / coreHeight;
+            const w = img.width * scale;
+            const h = img.height * scale;
+            let x = xPct * canvasW;
+            if (align === 'right') x -= w;
+            else if (align === 'center') x -= w / 2;
+            const y = bottomPct * canvasH - h;
+            ctx.drawImage(img, x, y, w, h);
+            return w;
+        }
+
+        // --- CONFIG DE PLACEMENT (x, y, hauteur en % du canvas + ancrage) ---
+        // Modifiable en direct via le panneau de calibrage (?debug=1).
+        // Le texte utilise "bottom" (bas de la boîte) + "coreHeight" (hauteur du corps de lettre,
+        // hors jambage/hampe) plutôt que "y"/"height", pour rester cohérent quel que soit le mot.
+        const LOGO_LAYOUT = {
+            tag:      { x: 0.955, y: 0.025, height: 0.08, align: 'right'  },
+            graphic:  { x: 0.49,  y: 0.28,  height: 0.414, align: 'center' },
+            text:     { x: 0.055, bottom: 0.98,   coreHeight: 0.05155, align: 'left' }
+        };
+
+        // Le canvas composité est identique pour toutes les cartes qui partagent la même solution
+        // (3 cartes sur 12 dans la roue actuelle) : on ne le génère/encode qu'une fois par solution,
+        // pas une fois par carte, même si `createTexture()` doit lui être appelé par carte (chaque
+        // model-viewer a son propre contexte GL, la texture elle-même n'est pas partageable).
+        const logoDataUrlCache = new Map();
+        function buildLogoDataURL(solution) {
+            const key = solution.tag + '|' + solution.graphic + '|' + solution.text;
+            if (!logoDataUrlCache.has(key)) {
+                logoDataUrlCache.set(key, (async () => {
+                    const [tagImg, graphicImg, textImg] = await Promise.all([
+                        loadImage(solution.tag), loadImage(solution.graphic), loadImage(solution.text)
+                    ]);
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 512;
+                    canvas.height = 569; // ratio proche du quad "logo_zone" du GLB
+                    const ctx = canvas.getContext('2d');
+
+                    const L = LOGO_LAYOUT;
+                    drawAtHeight(ctx, tagImg, L.tag.x, L.tag.y, L.tag.height, canvas.width, canvas.height, L.tag.align);
+                    drawAtHeight(ctx, graphicImg, L.graphic.x, L.graphic.y, L.graphic.height, canvas.width, canvas.height, L.graphic.align);
+                    drawTextCoreAligned(ctx, textImg, L.text.x, L.text.bottom, L.text.coreHeight, canvas.width, canvas.height, L.text.align);
+
+                    return canvas.toDataURL();
+                })());
+            }
+            return logoDataUrlCache.get(key);
+        }
+
+        async function applyLogoTexture(modelViewer, solution) {
+            const material = modelViewer.model.materials.find(m => m.name === 'logo_zone');
+            if (!material) return;
+
+            const dataUrl = await buildLogoDataURL(solution);
+            const texture = await modelViewer.createTexture(dataUrl);
+            material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+        }
+
+        // Ré-applique la texture sur toutes les cartes déjà chargées (utilisé par le panneau de calibrage)
+        function reapplyAllTextures() {
+            logoDataUrlCache.clear(); // le layout a changé, les canvas mis en cache ne sont plus valides
+            cardsData.forEach((d, i) => {
+                if (d.modelViewer.model) applyLogoTexture(d.modelViewer, solutions[i % solutions.length]);
             });
         }
 
-        function runLoaderErase() {
-            dots.forEach(d => d.element.classList.remove('ripple'));
-            [0,1,2,3,4].forEach(dist => {
-                setTimeout(() => {
-                    dots.filter(d => d.dist === dist).forEach(d => d.element.classList.add('erase'));
-                }, dist * 150);
+        // --- PANNEAU DE CALIBRAGE (visible avec ?debug=1) ---
+        if (new URLSearchParams(location.search).has('debug')) {
+            const panel = document.getElementById('layout-panel');
+            panel.style.display = 'block';
+
+            // Le texte a un schéma différent (bottom/coreHeight au lieu de y/height)
+            // car il est aligné/mis à l'échelle sur le corps de lettre, pas la boîte brute.
+            const FIELDS = [
+                { key: 'tag', label: 'Tag', props: [['x', 'x'], ['y', 'y'], ['h', 'height']] },
+                { key: 'graphic', label: 'Icône', props: [['x', 'x'], ['y', 'y'], ['h', 'height']] },
+                { key: 'text', label: 'Texte', props: [['x', 'x'], ['bas', 'bottom'], ['corps', 'coreHeight']] }
+            ];
+
+            let html = '<h3>Calibrage logo_zone</h3>';
+            FIELDS.forEach(f => {
+                const v = LOGO_LAYOUT[f.key];
+                html += `<fieldset><legend>${f.label} (${v.align})</legend>`;
+                f.props.forEach(([labelText, prop]) => {
+                    const val = v[prop];
+                    html += `<label><span>${labelText}</span><input type="range" min="0" max="1" step="0.005" value="${val}" data-key="${f.key}" data-prop="${prop}"><span data-out="${f.key}.${prop}">${val.toFixed(3)}</span></label>`;
+                });
+                html += '</fieldset>';
+            });
+            html += '<button id="layout-copy">Copier la config JS</button>';
+            panel.innerHTML = html;
+
+            panel.addEventListener('input', (e) => {
+                const input = e.target;
+                if (input.tagName !== 'INPUT') return;
+                const { key, prop } = input.dataset;
+                const value = parseFloat(input.value);
+                LOGO_LAYOUT[key][prop] = value;
+                panel.querySelector(`[data-out="${key}.${prop}"]`).textContent = value.toFixed(3);
+                reapplyAllTextures();
+            });
+
+            document.getElementById('layout-copy').addEventListener('click', () => {
+                const code = 'const LOGO_LAYOUT = ' + JSON.stringify(LOGO_LAYOUT, null, 4) + ';';
+                navigator.clipboard.writeText(code);
+                const btn = document.getElementById('layout-copy');
+                const original = btn.textContent;
+                btn.textContent = 'Copié !';
+                setTimeout(() => { btn.textContent = original; }, 1200);
             });
         }
 
         // --- INITIALISATION DES CARTES ---
         for (let i = 0; i < numberOfCards; i++) {
+            // CORRECTION LOGIQUE : Cycle strict sur les solutions disponibles (0,1,2,3...0,1,2,3)
+            const solution = solutions[i % solutions.length];
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'card-wrapper';
+
             const card = document.createElement('model-viewer');
-            
-            // CORRECTION LOGIQUE : Cycle strict sur 4 modèles (0,1,2,3...0,1,2,3)
-            const modelIndex = i % modelFiles.length;
-            card.src = modelFiles[modelIndex];
-            
-            card.setAttribute('environment-image', 'neutral'); 
+            card.src = solution.model;
+
+            card.setAttribute('environment-image', 'neutral');
             card.setAttribute('exposure', '1'); // Brillance métallique
             card.setAttribute('shadow-intensity', '0'); // Sans ombres
-            
+
             card.setAttribute('interaction-prompt', 'none');
             card.setAttribute('camera-orbit', '-28deg 89deg auto');
             card.setAttribute('camera-target', '0m 0.08m 0m');
             card.setAttribute('bounds', 'tight');
             card.setAttribute('field-of-view', '30deg');
 
-            const hitbox = document.createElement('div');
-            hitbox.className = 'hitbox';
-            card.appendChild(hitbox);
+            card.addEventListener('load', () => applyLogoTexture(card, solution), { once: true });
 
-            container.appendChild(card);
-            cardsData.push({ element: card, angle: (360 / numberOfCards) * i });
+            wrapper.appendChild(card);
+            container.appendChild(wrapper);
+            cardsData.push({ element: wrapper, modelViewer: card, angle: (360 / numberOfCards) * i });
         }
 
         // --- BOUCLE D'ANIMATION ---
+        // mouseDirty évite de recalculer/réassigner cameraOrbit sur les 12 cartes à chaque frame
+        // quand la souris n'a pas bougé depuis la dernière fois (la valeur serait identique).
+        let mouseDirty = true;
+
         function animate() {
             if (!animationActive) return;
 
             currentSpeed = Math.max(baseSpeed, currentSpeed * friction);
+
+            // Communs à toutes les cartes : calculés une fois par frame, pas une fois par carte.
+            const mouseMoveX = mousePos.x * (window.innerWidth * 0.05);
+            const mouseMoveY = mousePos.y * (window.innerHeight * 0.03);
+
+            if (mouseDirty) {
+                const cameraOrbitValue = `${-28 + (mousePos.x * 15)}deg ${89 + (mousePos.y * 15)}deg auto`;
+                cardsData.forEach(data => { data.modelViewer.cameraOrbit = cameraOrbitValue; });
+                mouseDirty = false;
+            }
 
             cardsData.forEach((data, index) => {
                 data.angle += currentSpeed;
                 if (data.angle >= 360) data.angle -= 360;
 
                 const radian = data.angle * (Math.PI / 180);
-                
-                const mouseMoveX = mousePos.x * (window.innerWidth * 0.05); 
-                const mouseMoveY = mousePos.y * (window.innerHeight * 0.03);
-                
+
                 const x = (Math.cos(radian) * finalRadius) + mouseMoveX;
-                const y = (Math.sin(radian) * finalRadius) + finalRadius + 20 + (index * 0.1) + mouseMoveY; 
-                
-                // Rotation de la caméra pour les reflets mobiles
-                data.element.cameraOrbit = `${-28 + (mousePos.x * 15)}deg ${89 + (mousePos.y * 15)}deg auto`;
-                
+                const y = (Math.sin(radian) * finalRadius) + finalRadius + 20 + (index * 0.1) + mouseMoveY;
+
                 const rotationZ = data.angle - 270;
                 const distFromCenter = Math.abs(data.angle - 270);
                 const blurAmount = Math.max(0, (distFromCenter - 35) / 14);
 
-                data.element.style.setProperty('--pos-x', `${x}px`);
-                data.element.style.setProperty('--pos-y', `${y}px`);
-                data.element.style.setProperty('--rot-z', `${rotationZ}deg`);
-
-                if (!data.element.querySelector('.hitbox:hover')) {
-                    data.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotationZ}deg) translateZ(${index}px)`;
-                    data.element.style.zIndex = Math.floor(data.angle);
-                }
+                data.element.style.transform = `translate(${x}px, ${y}px) rotate(${rotationZ}deg) translateZ(${index}px)`;
+                data.element.style.zIndex = Math.floor(data.angle);
 
                 // Opacité élargie pour garantir la visibilité des 4 types
-                data.element.style.opacity = (data.angle > 110 && data.angle < 430) ? "1" : "0";
+                data.element.style.opacity = data.angle > 110 ? "1" : "0";
                 data.element.style.filter = `blur(${blurAmount}px)`;
             });
 
@@ -253,33 +477,22 @@
 
         // --- GESTION ÉVÉNEMENTS ---
         window.addEventListener('load', () => {
-            runLoaderRipple();
-            loaderInt = setInterval(runLoaderRipple, 1500);
-
-            setTimeout(() => {
-                clearInterval(loaderInt);
-                runLoaderErase();
-                setTimeout(() => {
-                    loader.classList.add('loader-hidden');
-                    setTimeout(() => {
-                        animationActive = true; 
-                        animate(); 
-                        container.classList.add('visible');
-                    }, 400);
-                }, 800);
-            }, 1800);
+            animationActive = true;
+            animate();
+            container.classList.add('visible');
         });
 
         window.addEventListener('resize', () => { finalRadius = getDynamicRadius(); });
 
         window.addEventListener('wheel', (e) => {
             if (!animationActive) return;
-            currentSpeed = Math.min(2.5, currentSpeed + Math.abs(e.deltaY) * 0.001);
+            currentSpeed = Math.min(1.6, currentSpeed + Math.abs(e.deltaY) * 0.0004);
         }, { passive: true });
 
         window.addEventListener("mousemove", (e) => {
             mousePos.x = (e.clientX / window.innerWidth) - 0.5;
             mousePos.y = (e.clientY / window.innerHeight) - 0.5;
+            mouseDirty = true;
         });
 
         let lastTouchY = 0;
@@ -292,6 +505,7 @@
             lastTouchY = currentTouchY;
             mousePos.x = (e.touches[0].clientX / window.innerWidth) - 0.5;
             mousePos.y = (e.touches[0].clientY / window.innerHeight) - 0.5;
+            mouseDirty = true;
         }, { passive: true });
     </script>
 </body>
